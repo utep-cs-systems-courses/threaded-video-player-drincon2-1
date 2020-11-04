@@ -1,24 +1,27 @@
+#!/usr/bin/env python3
+
+from threading import Lock, Semaphore
+
 class Queue:
    
    def init(self):
-      self.frames = []
-   
-   def isEmpty(self):
-      if len(self.size()) == 0:
-         return true
-      else:
-         return false
-   
+      self.frame_queue = []
+      self.lock = Lock()
+      self.full = Semaphore(0)
+      self.empty = Semaphore(10)
+      
    def enqueue(self, frame):
-      self.frames.append()
+      self.empty.acquire()
+      self.lock.acquire()
+      self.frame_queue.append(frame)
+      self.lock.release()
+      self.full.release()
    
    def dequeue(self):
-      temp_frame = self.frame[0]
-      self.frame.remove(temp_frame)
-      return temp_frame
-      
-   def size(def):
-      return len(self.frames)
-   
-   
-      
+      self.full.acquire()
+      self.lock.acquire()
+      frame = self.frame_queue[0]
+      self.frame_queue.remove(frame)
+      self.lock.release()
+      self.empty.release()
+      return frame
