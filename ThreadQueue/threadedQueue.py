@@ -4,7 +4,7 @@ from threading import Lock, Semaphore
 
 class Queue:
    
-   def init(self):
+   def __init__(self):
       self.frame_queue = []
       self.lock = Lock()
       self.full = Semaphore(0)

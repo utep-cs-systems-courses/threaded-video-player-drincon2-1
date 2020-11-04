@@ -2,56 +2,48 @@
 
 from threading import Thread, Lock, Semaphore
 from threadedQueue import Queue
+import convertFrames
 import cv2
-import time
 
-# Queue for producer and consumer
-displayQueue = Queue()
 
-# Producer. Extract converted frames from convertFrames.
-class ProducerThread(Thread):
-   def __init__(self, q):
-      self.queue = q
+# Display extracted frames.
+def displayFrames(gray_queue):
+   # Frame delay
+   frameDelay = 42
+   # Initialize frame count
+   count = 0
+   # load the frame
+   frame = gray_queue.dequeue()
+
+   while frame is not None:
+      print(f'Displaying frame {count}')
+      # Display the frame in a window called "Video"
+      cv2.imshow('Video', frame)
+
+      # Wait for 42 ms and check if the user wants to quit
+      if cv2.waitKey(frameDelay) and 0xFF == ord("q"):
+         break    
+
+      count += 1
       
-   def run(self):
-      global displayQueue
-      # TODO use semaphore to get signal from convertFrames consumer
+      # Load the next frame file
+      frame = gray_queue.dequeue()
+
+   # make sure we cleanup the windows, otherwise we might end up with a mess
+   cv2.destroyAllWindows()
       
-      # initialize frame count
-      count = 0
-
-      # Generate the filename for the first frame 
-      frameFileName = self.queue.dequeue()
-      # Pass current converted frame to displayQueue
-      displayQueue.enqueue(frameFileName)
-      # TODO use semaphore to signal consumer 
       
+# Producer-consumer thread setup
+# Color frame queue
+color_queue = Queue()
+# Gray frame queue
+gray_queue = Queue()
+# Threads
+extract_f = Thread(target = convertFrames.extractFrames, args = (color_queue,))
+convert_f = Thread(target = convertFrames.convertFrames, args = (color_queue, gray_queue))
+display_f = Thread(target = displayFrames, args = (gray_queue,))
 
-# Consumer. Display extracted frames.
-class ConsumerThread(Thread):
-   def run(self):
-      global displayQueue
-      # TODO use semaphore to get signal from producer
-      # load the frame
-      frame = cv2.imread(displayQueue.dequeue())
+extract_f.start()
+convert_f.start()
+display_f.start()
 
-      while frame is not None:
-    
-         print(f'Displaying frame {count}')
-         # Display the frame in a window called "Video"
-         cv2.imshow('Video', frame)
-
-         # Wait for 42 ms and check if the user wants to quit
-         if cv2.waitKey(frameDelay) and 0xFF == ord("q"):
-            break    
-    
-         # get the next frame filename
-         count += 1
-         # TODO use semaphore to get signal from producer
-         frameFileName = displayQueue.dequeue()
-
-         # Read the next frame file
-         frame = cv2.imread(frameFileName)
-
-      # make sure we cleanup the windows, otherwise we might end up with a mess
-      cv2.destroyAllWindows()
